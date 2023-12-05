@@ -2,19 +2,19 @@ const express = require("express");
 const { isOwner, isAuthenticated, isAdmin } = require("../middleware/auth");
 const catchAsyncErrors = require("../middleware/catchAsyncErrors");
 const router = express.Router();
-const Community = require("../models/community");
+const Program = require("../models/program");
 const Admin = require("../models/admin");
 const cloudinary = require("cloudinary");
 const ErrorHandler = require("../utils/ErrorHandler");
 
 router.post(
-  "/create-product",
+  "/create-program",
   catchAsyncErrors(async (req, res, next) => {
     try {
       const adminId = req.body.adminId;
       const admin = await Admin.findById(adminId);
       if (!admin) {
-        return next(new ErrorHandler("Admin Id is invalid!", 400));
+        return next(new ErrorHandler("Nincs jogosultságod ehhez", 400));
       } else {
         let images = [];
 
@@ -28,7 +28,7 @@ router.post(
 
         for (let i = 0; i < images.length; i++) {
           const result = await cloudinary.v2.uploader.upload(images[i], {
-            folder: "products",
+            folder: "programs",
           });
 
           imagesLinks.push({
@@ -37,15 +37,15 @@ router.post(
           });
         }
 
-        const productData = req.body;
-        productData.images = imagesLinks;
-        productData.admin = admin;
+        const programData = req.body;
+        programData.images = imagesLinks;
+        programData.admin = admin;
 
-        const product = await Product.create(productData);
+        const program = await Program.create(programData);
 
         res.status(201).json({
           success: true,
-          product,
+          program,
         });
       }
     } catch (error) {
@@ -55,14 +55,14 @@ router.post(
 );
 
 router.get(
-  "/get-all-products-admin/:id",
+  "/get-all-programs-admin/:id",
   catchAsyncErrors(async (req, res, next) => {
     try {
-      const products = await Product.find({ adminId: req.params.id });
+      const programs = await Program.find({ adminId: req.params.id });
 
       res.status(201).json({
         success: true,
-        products,
+        programs,
       });
     } catch (error) {
       return next(new ErrorHandler(error, 400));
@@ -71,27 +71,27 @@ router.get(
 );
 
 router.delete(
-  "/delete-admin-product/:id",
+  "/delete-admin-program/:id",
   isOwner,
   catchAsyncErrors(async (req, res, next) => {
     try {
-      const product = await Product.findById(req.params.id);
+      const program = await Program.findById(req.params.id);
 
-      if (!product) {
-        return next(new ErrorHandler("Product is not found with this id", 404));
+      if (!program) {
+        return next(new ErrorHandler("Nincs ilyen közösségi program", 404));
       }
 
-      for (let i = 0; 1 < product.images.length; i++) {
+      for (let i = 0; 1 < program.images.length; i++) {
         const result = await cloudinary.v2.uploader.destroy(
-          product.images[i].public_id
+          program.images[i].public_id
         );
       }
 
-      await product.remove();
+      await program.remove();
 
       res.status(201).json({
         success: true,
-        message: "Product Deleted successfully!",
+        message: "Közösségi program sikeresen törölve",
       });
     } catch (error) {
       return next(new ErrorHandler(error, 400));
@@ -100,14 +100,14 @@ router.delete(
 );
 
 router.get(
-  "/get-all-products",
+  "/get-all-programs",
   catchAsyncErrors(async (req, res, next) => {
     try {
-      const products = await Product.find().sort({ createdAt: -1 });
+      const programs = await Program.find().sort({ createdAt: -1 });
 
       res.status(201).json({
         success: true,
-        products,
+        programs,
       });
     } catch (error) {
       return next(new ErrorHandler(error, 400));
@@ -120,44 +120,44 @@ router.put(
   isAuthenticated,
   catchAsyncErrors(async (req, res, next) => {
     try {
-      const { user, rating, comment, productId } = req.body;
+      const { user, rating, comment, programId } = req.body;
 
-      const product = await Product.findById(productId);
+      const program = await Program.findById(programId);
 
       const review = {
         user,
         rating,
         comment,
-        productId,
+        programId,
       };
 
-      const isReviewed = product.reviews.find(
+      const isReviewed = program.reviews.find(
         (rev) => rev.user._id === req.user._id
       );
 
       if (isReviewed) {
-        product.reviews.forEach((rev) => {
+        program.reviews.forEach((rev) => {
           if (rev.user._id === req.user._id) {
             (rev.rating = rating), (rev.comment = comment), (rev.user = user);
           }
         });
       } else {
-        product.reviews.push(review);
+        program.reviews.push(review);
       }
 
       let avg = 0;
 
-      product.reviews.forEach((rev) => {
+      program.reviews.forEach((rev) => {
         avg += rev.rating;
       });
 
-      product.ratings = avg / product.reviews.length;
+      program.ratings = avg / program.reviews.length;
 
-      await product.save({ validateBeforeSave: false });
+      await program.save({ validateBeforeSave: false });
 
       res.status(200).json({
         success: true,
-        message: "Reviwed succesfully!",
+        message: "Sikeres értékelés",
       });
     } catch (error) {
       return next(new ErrorHandler(error, 400));
@@ -166,17 +166,17 @@ router.put(
 );
 
 router.get(
-  "/admin-all-products",
+  "/admin-all-programs",
   isAuthenticated,
   isAdmin("Admin"),
   catchAsyncErrors(async (req, res, next) => {
     try {
-      const products = await Product.find().sort({
+      const programs = await Program.find().sort({
         createdAt: -1,
       });
       res.status(201).json({
         success: true,
-        products,
+        programs,
       });
     } catch (error) {
       return next(new ErrorHandler(error.message, 500));
