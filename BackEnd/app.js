@@ -25,12 +25,14 @@ if (process.env.NODE_ENV !== "PRODUCTION") {
 const user = require("./controllers/user");
 const admin = require("./controllers/admin");
 const program = require("./controllers/program");
+const sight = require("./controllers/sight");
 const message = require("./controllers/message");
 
 app.use("/api/v2/user", user);
 app.use("/api/v2/message", message);
 app.use("/api/v2/admin", admin);
 app.use("/api/v2/program", program);
+app.use("/api/v2/sight", sight);
 
 app.use(ErrorHandler);
 
