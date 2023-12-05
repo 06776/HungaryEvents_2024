@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 
-const communitySchema = new mongoose.Schema({
+const programSchema = new mongoose.Schema({
   name: {
     type: String,
     required: [true, "Nevezd el a közösségi programot"],
@@ -39,7 +39,7 @@ const communitySchema = new mongoose.Schema({
       comment: {
         type: String,
       },
-      communityId: {
+      programId: {
         type: String,
       },
       createdAt: {
@@ -65,4 +65,4 @@ const communitySchema = new mongoose.Schema({
   },
 });
 
-module.exports = mongoose.model("Community", communitySchema);
+module.exports = mongoose.model("Program", programSchema);
