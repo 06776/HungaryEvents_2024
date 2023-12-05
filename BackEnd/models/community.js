@@ -1,17 +1,17 @@
 const mongoose = require("mongoose");
 
-const communityProgramSchema = new mongoose.Schema({
+const communitySchema = new mongoose.Schema({
   name: {
     type: String,
-    required: [true, "Add meg az esemény nevét"],
+    required: [true, "Nevezd el a közösségi programot"],
   },
   description: {
     type: String,
-    required: [true, "Add meg az esemény leírását"],
+    required: [true, "Add meg a program leírását"],
   },
   category: {
     type: String,
-    required: [true, "Válaszd ki a kategóriát"],
+    required: [true, "Válassz egy kategóriát"],
   },
   tags: {
     type: String,
@@ -39,7 +39,7 @@ const communityProgramSchema = new mongoose.Schema({
       comment: {
         type: String,
       },
-      communityProgramId: {
+      communityId: {
         type: String,
       },
       createdAt: {
@@ -55,10 +55,14 @@ const communityProgramSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  admin: {
+    type: Object,
+    required: true,
+  },
   createdAt: {
     type: Date,
     default: Date.now(),
   },
 });
 
-module.exports = mongoose.model("CommunityProgram", communityProgramSchema);
+module.exports = mongoose.model("Community", communitySchema);
