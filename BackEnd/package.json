@@ -2,11 +2,13 @@
   "name": "hungaryevents_2024",
   "version": "1.0.0",
   "description": "",
-  "main": "backend/server.js",
+  "main": "server.js",
+  "engines": {
+    "node": "16.x"
+  },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "nodemon backend/server.js",
-    "start": "nodemon backend/server.js"
+    "dev": "nodemon server.js",
+    "start": "node server.js"
   },
   "author": "Patrik Hajdara",
   "license": "ISC",
