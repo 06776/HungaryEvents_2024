@@ -11,13 +11,13 @@ const ErrorHandler = require("../utils/ErrorHandler");
 const sendAdminToken = require("../utils/adminToken");
 
 router.post(
-  "/create-shop",
+  "/create-admin",
   catchAsyncErrors(async (req, res, next) => {
     try {
       const { email } = req.body;
-      const ownerEmail = await Admin.findOne({ email });
-      if (ownerEmail) {
-        return next(new ErrorHandler("Az admin már létezik", 400));
+      const adminEmail = await Admin.findOne({ email });
+      if (adminEmail) {
+        return next(new ErrorHandler("User already exists", 400));
       }
 
       const myCloud = await cloudinary.v2.uploader.upload(req.body.avatar, {
@@ -36,14 +36,15 @@ router.post(
 
       const activationToken = createActivationToken(owner);
 
-      const activationUrl = `https://localhost:3000/owner/activation/${activationToken}`;
+      const activationUrl = ``;
 
       try {
         await sendMail({
           email: owner.email,
-          subject: "Aktiváld a regisztrációdat",
-          message: `${owner.name}!
-          Kérlek, aktiváld a regisztrációdat az alábbi linkre kattintva: ${activationUrl}`,
+          subject: "Admin aktiválás",
+          message: `Kedves ${owner.name}!
+        Aktiváld fiókodat az alábbi linkre kattintva:
+        ${activationUrl}`,
         });
         res.status(201).json({
           success: true,
@@ -76,15 +77,14 @@ router.post(
       );
 
       if (!newOwner) {
-        return next(new ErrorHandler("A link már lejárt", 400));
+        return next(new ErrorHandler("Invalid token", 400));
       }
-      const { name, email, password, avatar } =
-        newOwner;
+      const { name, email, password, avatar } = newOwner;
 
       let owner = await Admin.findOne({ email });
 
       if (owner) {
-        return next(new ErrorHandler("Az admin már létezik", 400));
+        return next(new ErrorHandler("User already exists", 400));
       }
 
       owner = await Admin.create({
@@ -133,7 +133,7 @@ router.post(
 );
 
 router.get(
-  "/get-owner",
+  "/getOwner",
   isOwner,
   catchAsyncErrors(async (req, res, next) => {
     try {
@@ -278,7 +278,7 @@ router.delete(
 
       if (!owner) {
         return next(
-          new ErrorHandler("Seller is not available with this id", 400)
+          new ErrorHandler("Owner is not available with this id", 400)
         );
       }
 
@@ -286,7 +286,7 @@ router.delete(
 
       res.status(201).json({
         success: true,
-        message: "Seller deleted successfully!",
+        message: "Owner deleted successfully!",
       });
     } catch (error) {
       return next(new ErrorHandler(error.message, 500));
