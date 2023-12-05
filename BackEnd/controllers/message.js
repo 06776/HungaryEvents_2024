@@ -1,4 +1,4 @@
-const Message = require("../models/message");
+const Messages = require("../models/messages");
 const ErrorHandler = require("../utils/ErrorHandler");
 const catchAsyncErrors = require("../middleware/catchAsyncErrors");
 const express = require("express");
@@ -13,7 +13,7 @@ router.post(
 
       if (req.body.images) {
         const myCloud = await cloudinary.v2.uploader.upload(req.body.images, {
-          folder: "message",
+          folder: "messages",
         });
         messageData.images = {
           public_id: myCloud.public_id,
@@ -45,16 +45,16 @@ router.post(
 );
 
 router.get(
-  "/get-all-message/:id",
+  "/get-all-messages/:id",
   catchAsyncErrors(async (req, res, next) => {
     try {
-      const message = await Message.find({
+      const messages = await Messages.find({
         conversationId: req.params.id,
       });
 
       res.status(201).json({
         success: true,
-        message,
+        messages,
       });
     } catch (error) {
       return next(new ErrorHandler(error.message), 500);
