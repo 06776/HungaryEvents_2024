@@ -17,7 +17,7 @@ router.post(
       const { email } = req.body;
       const adminEmail = await Admin.findOne({ email });
       if (adminEmail) {
-        return next(new ErrorHandler("User already exists", 400));
+        return next(new ErrorHandler("Az Admin már létezik", 400));
       }
 
       const myCloud = await cloudinary.v2.uploader.upload(req.body.avatar, {
@@ -36,7 +36,7 @@ router.post(
 
       const activationToken = createActivationToken(owner);
 
-      const activationUrl = ``;
+      const activationUrl = `https://localhost:3000/activation/${activationToken}`;
 
       try {
         await sendMail({
@@ -77,14 +77,14 @@ router.post(
       );
 
       if (!newOwner) {
-        return next(new ErrorHandler("Invalid token", 400));
+        return next(new ErrorHandler("Ez a link már lejárt", 400));
       }
       const { name, email, password, avatar } = newOwner;
 
       let owner = await Admin.findOne({ email });
 
       if (owner) {
-        return next(new ErrorHandler("User already exists", 400));
+        return next(new ErrorHandler("Az e-mail cím már foglalt", 400));
       }
 
       owner = await Admin.create({
@@ -108,21 +108,24 @@ router.post(
       const { email, password } = req.body;
 
       if (!email || !password) {
-        return next(new ErrorHandler("Please provide the all fields!", 400));
+        return next(
+          new ErrorHandler(
+            "Kérlek, add meg az adataidat a bejelentkezéshez",
+            400
+          )
+        );
       }
 
       const user = await Admin.findOne({ email }).select("+password");
 
       if (!user) {
-        return next(new ErrorHandler("User doesn't exists!", 400));
+        return next(new ErrorHandler("Az Admin nem található", 400));
       }
 
       const isPasswordValid = await user.comparePassword(password);
 
       if (!isPasswordValid) {
-        return next(
-          new ErrorHandler("Please provide the correct information", 400)
-        );
+        return next(new ErrorHandler("Helytelen jelszó", 400));
       }
 
       sendAdminToken(user, 201, res);
@@ -140,7 +143,7 @@ router.get(
       const owner = await Admin.findById(req.owner._id);
 
       if (!owner) {
-        return next(new ErrorHandler("User doesn't exists", 400));
+        return next(new ErrorHandler("Nincs ilyen felhasználó", 400));
       }
 
       res.status(200).json({
@@ -165,7 +168,7 @@ router.get(
       });
       res.status(201).json({
         success: true,
-        message: "Log out successful!",
+        message: "Sikeres kijelentkezés",
       });
     } catch (error) {
       return next(new ErrorHandler(error.message, 500));
@@ -231,7 +234,7 @@ router.put(
       const admin = await Admin.findOne(req.owner._id);
 
       if (!admin) {
-        return next(new ErrorHandler("User not found", 400));
+        return next(new ErrorHandler("Nincs ilyen felhasználó", 400));
       }
 
       admin.name = name;
@@ -277,16 +280,14 @@ router.delete(
       const owner = await Admin.findById(req.params.id);
 
       if (!owner) {
-        return next(
-          new ErrorHandler("Owner is not available with this id", 400)
-        );
+        return next(new ErrorHandler("A felhasználó nem létezik", 400));
       }
 
       await Admin.findByIdAndDelete(req.params.id);
 
       res.status(201).json({
         success: true,
-        message: "Owner deleted successfully!",
+        message: "Felhasználó sikeresen törölve",
       });
     } catch (error) {
       return next(new ErrorHandler(error.message, 500));

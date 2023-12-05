@@ -15,7 +15,7 @@ router.post("/create-user", async (req, res, next) => {
     const userEmail = await User.findOne({ email });
 
     if (userEmail) {
-      return next(new ErrorHandler("User already exists", 400));
+      return next(new ErrorHandler("Az e-mail cím már foglalt", 400));
     }
 
     const myCloud = await cloudinary.v2.uploader.upload(avatar, {
@@ -34,17 +34,21 @@ router.post("/create-user", async (req, res, next) => {
 
     const activationToken = createActivationToken(user);
 
-    const activationUrl = `https://eshop-tutorial-pyri.vercel.app/activation/${activationToken}`;
+    const activationUrl = `https://localhost:3000/activation/${activationToken}`;
 
     try {
       await sendMail({
         email: user.email,
-        subject: "Activate your account",
-        message: `Hello ${user.name}, please click on the link to activate your account: ${activationUrl}`,
+        subject: "Felhasználó aktiválás",
+        message: `Kedves ${user.name}!
+        Köszönjük, hogy regisztráltál a HungaryEvents rendszerébe.
+        Kérjük, aktiváld a regisztrációdat az alábbi linkre kattintva:
+        ${activationUrl}
+        Üdvözlettel: HungaryEvents`,
       });
       res.status(201).json({
         success: true,
-        message: `please check your email:- ${user.email} to activate your account!`,
+        message: `Ellenőrizd az e-mailjeidet fiókod aktiválásához`,
       });
     } catch (error) {
       return next(new ErrorHandler(error.message, 500));
@@ -72,14 +76,14 @@ router.post(
       );
 
       if (!newUser) {
-        return next(new ErrorHandler("Invalid token", 400));
+        return next(new ErrorHandler("Ez a link már lejárt", 400));
       }
       const { name, email, password, avatar } = newUser;
 
       let user = await User.findOne({ email });
 
       if (user) {
-        return next(new ErrorHandler("User already exists", 400));
+        return next(new ErrorHandler("Már van ilyen felhasználó", 400));
       }
       user = await User.create({
         name,
@@ -102,21 +106,24 @@ router.post(
       const { email, password } = req.body;
 
       if (!email || !password) {
-        return next(new ErrorHandler("Please provide the all fields!", 400));
+        return next(
+          new ErrorHandler(
+            "Kérjük, add meg az adataidat a bejelentkezéshez",
+            400
+          )
+        );
       }
 
       const user = await User.findOne({ email }).select("+password");
 
       if (!user) {
-        return next(new ErrorHandler("User doesn't exists!", 400));
+        return next(new ErrorHandler("Nincs ilyen felhasználó", 400));
       }
 
       const isPasswordValid = await user.comparePassword(password);
 
       if (!isPasswordValid) {
-        return next(
-          new ErrorHandler("Please provide the correct information", 400)
-        );
+        return next(new ErrorHandler("Helytelen jelszó", 400));
       }
 
       sendToken(user, 201, res);
@@ -134,7 +141,7 @@ router.get(
       const user = await User.findById(req.user.id);
 
       if (!user) {
-        return next(new ErrorHandler("User doesn't exists", 400));
+        return next(new ErrorHandler("Nincs ilyen felhasználó", 400));
       }
 
       res.status(200).json({
@@ -159,7 +166,7 @@ router.get(
       });
       res.status(201).json({
         success: true,
-        message: "Log out successful!",
+        message: "Sikeres kijelentkezés",
       });
     } catch (error) {
       return next(new ErrorHandler(error.message, 500));
@@ -177,15 +184,13 @@ router.put(
       const user = await User.findOne({ email }).select("+password");
 
       if (!user) {
-        return next(new ErrorHandler("User not found", 400));
+        return next(new ErrorHandler("A felhasználó nem található", 400));
       }
 
       const isPasswordValid = await user.comparePassword(password);
 
       if (!isPasswordValid) {
-        return next(
-          new ErrorHandler("Please provide the correct information", 400)
-        );
+        return next(new ErrorHandler("Helytelen jelszó", 400));
       }
 
       user.name = name;
@@ -249,13 +254,11 @@ router.put(
       );
 
       if (!isPasswordMatched) {
-        return next(new ErrorHandler("Old password is incorrect!", 400));
+        return next(new ErrorHandler("Régi jelszavad nem megfelelő", 400));
       }
 
       if (req.body.newPassword !== req.body.confirmPassword) {
-        return next(
-          new ErrorHandler("Password doesn't matched with each other!", 400)
-        );
+        return next(new ErrorHandler("A jelszavak nem egyeznek", 400));
       }
       user.password = req.body.newPassword;
 
@@ -263,7 +266,7 @@ router.put(
 
       res.status(200).json({
         success: true,
-        message: "Password updated successfully!",
+        message: "Sikeres jelszó módosítás",
       });
     } catch (error) {
       return next(new ErrorHandler(error.message, 500));
@@ -315,9 +318,7 @@ router.delete(
       const user = await User.findById(req.params.id);
 
       if (!user) {
-        return next(
-          new ErrorHandler("User is not available with this id", 400)
-        );
+        return next(new ErrorHandler("Nincs ilyen felhasználó", 400));
       }
 
       const imageId = user.avatar.public_id;
@@ -328,7 +329,7 @@ router.delete(
 
       res.status(201).json({
         success: true,
-        message: "User deleted successfully!",
+        message: "Felhasználó sikeresen törölve",
       });
     } catch (error) {
       return next(new ErrorHandler(error.message, 500));
