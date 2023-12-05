@@ -1,11 +1,11 @@
 const express = require("express");
+const { isOwner, isAuthenticated, isAdmin } = require("../middleware/auth");
 const catchAsyncErrors = require("../middleware/catchAsyncErrors");
-const Admin = require("../models/admin");
-const Sight = require("../models/sight");
-const ErrorHandler = require("../utils/ErrorHandler");
-const { isOwner, isAdmin, isAuthenticated } = require("../middleware/auth");
 const router = express.Router();
+const Sight = require("../models/sight");
+const Admin = require("../models/admin");
 const cloudinary = require("cloudinary");
+const ErrorHandler = require("../utils/ErrorHandler");
 
 router.post(
   "/create-sight",
@@ -14,7 +14,7 @@ router.post(
       const adminId = req.body.adminId;
       const admin = await Admin.findById(adminId);
       if (!admin) {
-        return next(new ErrorHandler("Shop Id is invalid!", 400));
+        return next(new ErrorHandler("Nincs jogosultságod ehhez", 400));
       } else {
         let images = [];
 
@@ -54,20 +54,8 @@ router.post(
   })
 );
 
-router.get("/get-all-sights", async (req, res, next) => {
-  try {
-    const sights = await Sight.find();
-    res.status(201).json({
-      success: true,
-      sights,
-    });
-  } catch (error) {
-    return next(new ErrorHandler(error, 400));
-  }
-});
-
 router.get(
-  "/get-all-sights/:id",
+  "/get-all-sights-admin/:id",
   catchAsyncErrors(async (req, res, next) => {
     try {
       const sights = await Sight.find({ adminId: req.params.id });
@@ -83,13 +71,16 @@ router.get(
 );
 
 router.delete(
-  "/delete-sight/:id",
+  "/delete-sights/:id",
+  isOwner,
   catchAsyncErrors(async (req, res, next) => {
     try {
       const sight = await Sight.findById(req.params.id);
 
       if (!sight) {
-        return next(new ErrorHandler("Product is not found with this id", 404));
+        return next(
+          new ErrorHandler("Nincs ilyen látványosság létrehozva", 404)
+        );
       }
 
       for (let i = 0; 1 < sight.images.length; i++) {
@@ -102,7 +93,23 @@ router.delete(
 
       res.status(201).json({
         success: true,
-        message: "Event Deleted successfully!",
+        message: "Látványosság sikeresen törölve",
+      });
+    } catch (error) {
+      return next(new ErrorHandler(error, 400));
+    }
+  })
+);
+
+router.get(
+  "/get-all-sights",
+  catchAsyncErrors(async (req, res, next) => {
+    try {
+      const sights = await Sight.find().sort({ createdAt: -1 });
+
+      res.status(201).json({
+        success: true,
+        sights,
       });
     } catch (error) {
       return next(new ErrorHandler(error, 400));
