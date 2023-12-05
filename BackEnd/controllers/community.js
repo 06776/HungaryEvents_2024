@@ -2,19 +2,19 @@ const express = require("express");
 const { isOwner, isAuthenticated, isAdmin } = require("../middleware/auth");
 const catchAsyncErrors = require("../middleware/catchAsyncErrors");
 const router = express.Router();
-const CommunityProgram = require("../models/communityProgram");
+const Community = require("../models/community");
 const Admin = require("../models/admin");
 const cloudinary = require("cloudinary");
 const ErrorHandler = require("../utils/ErrorHandler");
 
 router.post(
-  "/create-community-program",
+  "/create-product",
   catchAsyncErrors(async (req, res, next) => {
     try {
       const adminId = req.body.adminId;
       const admin = await Admin.findById(adminId);
       if (!admin) {
-        return next(new ErrorHandler("Shop Id is invalid!", 400));
+        return next(new ErrorHandler("Admin Id is invalid!", 400));
       } else {
         let images = [];
 
@@ -28,7 +28,7 @@ router.post(
 
         for (let i = 0; i < images.length; i++) {
           const result = await cloudinary.v2.uploader.upload(images[i], {
-            folder: "programs",
+            folder: "products",
           });
 
           imagesLinks.push({
@@ -37,17 +37,15 @@ router.post(
           });
         }
 
-        const communityProgramData = req.body;
-        communityProgramData.images = imagesLinks;
-        communityProgramData.admin = admin;
+        const productData = req.body;
+        productData.images = imagesLinks;
+        productData.admin = admin;
 
-        const communityProgram = await CommunityProgram.create(
-          communityProgramData
-        );
+        const product = await Product.create(productData);
 
         res.status(201).json({
           success: true,
-          communityProgram,
+          product,
         });
       }
     } catch (error) {
@@ -57,14 +55,14 @@ router.post(
 );
 
 router.get(
-  "/get-all-programs-admin/:id",
+  "/get-all-products-admin/:id",
   catchAsyncErrors(async (req, res, next) => {
     try {
-      const programs = await CommunityProgram.find({ adminId: req.params.id });
+      const products = await Product.find({ adminId: req.params.id });
 
       res.status(201).json({
         success: true,
-        programs,
+        products,
       });
     } catch (error) {
       return next(new ErrorHandler(error, 400));
@@ -73,23 +71,23 @@ router.get(
 );
 
 router.delete(
-  "/delete-programs/:id",
+  "/delete-admin-product/:id",
   isOwner,
   catchAsyncErrors(async (req, res, next) => {
     try {
-      const program = await CommunityProgram.findById(req.params.id);
+      const product = await Product.findById(req.params.id);
 
-      if (!program) {
+      if (!product) {
         return next(new ErrorHandler("Product is not found with this id", 404));
       }
 
-      for (let i = 0; 1 < program.images.length; i++) {
+      for (let i = 0; 1 < product.images.length; i++) {
         const result = await cloudinary.v2.uploader.destroy(
-          program.images[i].public_id
+          product.images[i].public_id
         );
       }
 
-      await program.remove();
+      await product.remove();
 
       res.status(201).json({
         success: true,
@@ -102,14 +100,14 @@ router.delete(
 );
 
 router.get(
-  "/get-all-programs",
+  "/get-all-products",
   catchAsyncErrors(async (req, res, next) => {
     try {
-      const programs = await CommunityProgram.find().sort({ createdAt: -1 });
+      const products = await Product.find().sort({ createdAt: -1 });
 
       res.status(201).json({
         success: true,
-        programs,
+        products,
       });
     } catch (error) {
       return next(new ErrorHandler(error, 400));
@@ -122,40 +120,40 @@ router.put(
   isAuthenticated,
   catchAsyncErrors(async (req, res, next) => {
     try {
-      const { user, rating, comment, programId } = req.body;
+      const { user, rating, comment, productId } = req.body;
 
-      const programs = await CommunityProgram.findById(programId);
+      const product = await Product.findById(productId);
 
       const review = {
         user,
         rating,
         comment,
-        programId,
+        productId,
       };
 
-      const isReviewed = programs.reviews.find(
+      const isReviewed = product.reviews.find(
         (rev) => rev.user._id === req.user._id
       );
 
       if (isReviewed) {
-        programs.reviews.forEach((rev) => {
+        product.reviews.forEach((rev) => {
           if (rev.user._id === req.user._id) {
             (rev.rating = rating), (rev.comment = comment), (rev.user = user);
           }
         });
       } else {
-        programs.reviews.push(review);
+        product.reviews.push(review);
       }
 
       let avg = 0;
 
-      programs.reviews.forEach((rev) => {
+      product.reviews.forEach((rev) => {
         avg += rev.rating;
       });
 
-      programs.ratings = avg / programs.reviews.length;
+      product.ratings = avg / product.reviews.length;
 
-      await programs.save({ validateBeforeSave: false });
+      await product.save({ validateBeforeSave: false });
 
       res.status(200).json({
         success: true,
@@ -168,17 +166,17 @@ router.put(
 );
 
 router.get(
-  "/admin-all-programs",
+  "/admin-all-products",
   isAuthenticated,
   isAdmin("Admin"),
   catchAsyncErrors(async (req, res, next) => {
     try {
-      const programs = await CommunityProgram.find().sort({
+      const products = await Product.find().sort({
         createdAt: -1,
       });
       res.status(201).json({
         success: true,
-        programs,
+        products,
       });
     } catch (error) {
       return next(new ErrorHandler(error.message, 500));
